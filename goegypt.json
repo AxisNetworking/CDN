@@ -1,5 +1,7 @@
 {
-  "data": {
-    "text": "butt"
+  "schools": {
+     "markaz1": "Cost: $175.00 / month"
+     "markaz2": "Cost: $175.00 / month"
+     "markaz3": "Cost: $175.00 / month"
   }
 }
