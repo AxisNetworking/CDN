@@ -1,7 +1,6 @@
-{
-  "schools": {
-     "markaz1": "Cost: $175.00 / month",
-     "markaz2": "Cost: $175.00 / month",
-     "markaz3": "Cost: $175.00 / month"
-  }
-}
+[
+  { "id": "pee", "progress": 3, "estimate": "March 12th 2026" },
+  { "id": "foo", "progress": 1, "estimate": "Jan 3rd 2025" },
+  { "id": "bar", "progress": 5, "estimate": "May 1st 2025" },
+  { "id": "baz", "progress": 2, "estimate": "July 9th 2025" }
+]
