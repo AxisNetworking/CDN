@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AXIS Admin Panel - Order Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Open Sans', sans-serif;
+      background: #f3f7fb;
+      margin: 0;
+      padding: 40px 20px;
+      color: #2c3e50;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    .controls {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+
+    .controls button {
+      background-color: #2ecc71;
+      color: white;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .controls button:hover {
+      background-color: #27ae60;
+    }
+
+    .grid {
+      display: grid;
+      gap: 20px;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    }
+
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 20px;
+      transition: transform 0.2s;
+    }
+
+    .card:hover {
+      transform: translateY(-5px);
+    }
+
+    .card h3 {
+      margin: 0 0 10px;
+      font-size: 18px;
+      color: #3498db;
+    }
+
+    .card label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 600;
+      font-size: 14px;
+    }
+
+    .card input,
+    .card select {
+      width: 100%;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .card button {
+      margin-top: 15px;
+      padding: 10px 16px;
+      background-color: #3498db;
+      border: none;
+      border-radius: 6px;
+      color: #fff;
+      font-weight: bold;
+      cursor: pointer;
+      width: 100%;
+    }
+
+    .card button:hover {
+      background-color: #2c80c4;
+    }
+
+    .success-msg {
+      text-align: center;
+      color: green;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+  <h1>AXIS Admin Panel – Order Management</h1>
+  <div class="controls">
+    <button onclick="addNewCard()">➕ Add New Order</button>
+  </div>
+  <div class="grid" id="orderGrid"></div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-app.js";
+    import {
+      getFirestore,
+      collection,
+      getDocs,
+      doc,
+      setDoc,
+      updateDoc
+    } from "https://www.gstatic.com/firebasejs/11.8.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyAl2SUkTCzeQ-WLMEMftUPetKmDwwfWc5Q",
+      authDomain: "axis-web-infrastructure.firebaseapp.com",
+      projectId: "axis-web-infrastructure",
+      storageBucket: "axis-web-infrastructure.appspot.com",
+      messagingSenderId: "637429362020",
+      appId: "1:637429362020:web:bd0ef52d83079d60f45e71",
+      measurementId: "G-ECPP7Q2SDD"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const stageNames = ["Planning", "Designing", "Developing", "Testing", "Built"];
+    const grid = document.getElementById("orderGrid");
+
+    async function loadOrders() {
+      const querySnapshot = await getDocs(collection(db, "orders"));
+      querySnapshot.forEach(docSnap => {
+        const data = docSnap.data();
+        const id = docSnap.id;
+        createCard(id, data.progress, data.estimate);
+      });
+    }
+
+    function createCard(id, progress = 1, estimate = "", isNew = false) {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <h3>${isNew ? "New Order" : "Project ID: " + id}</h3>
+        <label>Order ID</label>
+        <input type="text" id="id-${id}" value="${id}" ${isNew ? "" : "disabled"} />
+
+        <label>Progress</label>
+        <select id="progress-${id}">
+          ${stageNames.map((name, index) => `
+            <option value="${index + 1}" ${progress === index + 1 ? "selected" : ""}>${name}</option>
+          `).join("")}
+        </select>
+
+        <label>Estimate</label>
+        <input type="text" id="estimate-${id}" value="${estimate}" placeholder="e.g. July 15, 2025" />
+
+        <button onclick="${isNew ? `saveNewOrder('${id}')` : `saveOrder('${id}')`}">${isNew ? "Add Order" : "Save Changes"}</button>
+        <div class="success-msg" id="msg-${id}"></div>
+      `;
+      grid.prepend(card); // New cards appear on top
+    }
+
+    window.saveOrder = async function(id) {
+      const progress = parseInt(document.getElementById(`progress-${id}`).value, 10);
+      const estimate = document.getElementById(`estimate-${id}`).value;
+
+      try {
+        await updateDoc(doc(db, "orders", id), { progress, estimate });
+        const msg = document.getElementById(`msg-${id}`);
+        msg.textContent = "✅ Saved!";
+        setTimeout(() => msg.textContent = "", 2000);
+      } catch (err) {
+        alert("Error saving order: " + err.message);
+      }
+    };
+
+    window.saveNewOrder = async function(tempId) {
+      const realId = document.getElementById(`id-${tempId}`).value.trim();
+      const progress = parseInt(document.getElementById(`progress-${tempId}`).value, 10);
+      const estimate = document.getElementById(`estimate-${tempId}`).value;
+
+      if (!realId) {
+        alert("Please enter a valid Order ID.");
+        return;
+      }
+
+      try {
+        await setDoc(doc(db, "orders", realId), { progress, estimate });
+        document.getElementById(`msg-${tempId}`).textContent = "✅ Order added!";
+        setTimeout(() => location.reload(), 1200);
+      } catch (err) {
+        alert("Error adding order: " + err.message);
+      }
+    };
+
+    window.addNewCard = function() {
+      const uniqueId = "new_" + Date.now(); // temp unique key until user inputs a real one
+      createCard(uniqueId, 1, "", true);
+    };
+
+    loadOrders();
+  </script>
+</body>
+</html>
